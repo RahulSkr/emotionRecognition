@@ -10,7 +10,7 @@ class LoadExtractor:
     def __init__(self, path, nfft=610):
         '''
         path: path to the folder containing the dataset from TESS
-        nfft: the FFT size, here, default is 610
+        nfft: the FFT size, default is 610
         '''
         self.path=path
         self.nfft=nfft
@@ -52,13 +52,25 @@ class LoadExtractor:
             mfccFeatureList.append(mfccFeatures)
         return mfccFeatureList
     
-    def deltaFeatureExtractor(self, featureList, interval):
+    def deltaFeatureExtractor(self, featureList, interval=2):
         '''
         featureList: the list of feature vectors for which we are to obatin the delta feature vector
-        interval: the number of frames with respect to which the delta value is calculated
+        interval: the number of frames with respect to which the delta value is calculated, default is 2
         '''
         deltafeatureList = []
         for feature in tqdm(featureList):
             feature = np.asarray(feature)
             deltafeatureList.append(speech_features.delta(feature, interval))
         return deltafeatureList
+    
+    def get_featureData(self):
+        rateList, sigList, labelList = self.loader()
+        mfccFeatureList = self.mfccExtractor(sigList, rateList)
+        deltaList = self.deltaFeatureExtractor(mfccFeatureList)
+        deltaDeltaList = self.deltaFeatureExtractor(deltaList)
+        
+        featureList = []
+        for features in zip(mfccFeatureList, deltaList, deltaDeltaList):
+            features = np.concatenate((features[0], features[1], features[2]),axis=1)
+            featureList.append(features)
+        return featureList
